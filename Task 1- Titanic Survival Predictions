@@ -1,0 +1,110 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+df_titanic=pd.read_csv ('/content/.config/Titanic-Dataset.csv')
+df_titanic
+
+# Explore Data
+
+print(df_titanic.info())
+print('\n')
+print(df_titanic.describe())
+
+#finding Missing values
+missing_values=df_titanic.isnull().sum()
+missing_values
+
+#Data Preprocessing
+
+#handle missing values
+df_titanic.fillna({'Age': df_titanic['Age'].mean()} ,inplace=True)
+df_titanic.fillna({'Embarked': df_titanic['Embarked'].mode()[0]}, inplace=True)
+df_titanic
+
+
+#Encode Categorical Variables
+df_titanic=pd.get_dummies(df_titanic, columns=['Sex', 'Embarked','Pclass'])
+
+#Feature Engineering
+df_titanic['FamilySize']=df_titanic['SibSp']+df_titanic['Parch']+1
+df_titanic
+
+#Drop Columns
+drop_columns = ['PassengerId', 'Ticket', 'Cabin','Parch','SibSp']
+df_titanic = df_titanic.drop(columns=drop_columns)
+df_titanic
+
+#Data Visualization
+# 1. Age Distribution of Passengers
+sns.histplot(df_titanic['Age'], bins=20, kde=True)
+plt.title('Age Distribution of Passengers')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.show()
+
+#2 Calculate survival rate based on Gender (Male & Female)
+# Calculate survival rates for male and female
+survival_rate_male = df_titanic[df_titanic['Sex_male'] == 1]['Survived'].mean()
+survival_rate_female = df_titanic[df_titanic['Sex_female'] == 1]['Survived'].mean()
+
+
+#create a bar plot
+sns.barplot(x=['Sex_male','Sex_female'], y=[survival_rate_male, survival_rate_female])
+plt.title('Survival Rate by Gender')
+plt.show()
+
+# 3. Survival Rate based on Passenger Class
+
+# Calculate survival rates for each Pclass
+pclass_survival_rates = df_titanic.groupby('Pclass_3')['Survived'].mean()
+
+# Create a bar plot
+sns.barplot(x=pclass_survival_rates.index, y=pclass_survival_rates.values)
+plt.title('Survival Rate based on Passenger Class')
+plt.xlabel('Passenger Class (3rd Class = less priority , Other class = high priority )')
+plt.ylabel('Survival Rate')
+plt.xticks(ticks=[0,1], labels=['1st/2nd Class','3rd Class'])
+plt.show()
+
+# 4. Survival Rate based on Family Size
+sns.barplot(x='FamilySize', y='Survived', data=df_titanic)
+plt.title('Survival Rate based on Family Size')
+plt.xlabel('Family Size')
+plt.ylabel('Survival Rate')
+plt.show()
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+
+# Split into features (X) and target (y)
+X = df_titanic[['Sex_male','Sex_female', 'Pclass_3','Pclass_1','Pclass_2', 'Age', 'Fare']]
+
+y = df_titanic['Survived']
+
+# Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4)
+
+# Create and train the model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Predict on the test set
+predictions = model.predict(X_test)
+
+# Print the predictions (optional)
+print(predictions)
+
+#create a count plot
+sns.countplot(x=predictions)
+plt.title('Count Plot of Predicted Survival')
+plt.xlabel('Predicted Survival (0 = No, 1 = Yes)')
+plt.ylabel('Count')
+plt.show()
+
+
+#Conclusions about the Titanic dataset and survival prediction:
+
+1.   Females had a much higher survival rate than males.
+
+2.  Higher passenger class (Pclass) significantly increased survival chances.
